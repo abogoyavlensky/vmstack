@@ -1,39 +1,14 @@
 import sqlalchemy
-from sqlalchemy import Integer, String, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+import VMtable
 
-class VM(sqlalchemy.ext.declarative.declarative_base()):
-    """This is "VM" table, which contain:
-    virtual machine "id" [int] (is a primaty_key)
-    virtual machine "name" [str] (shoud not be repeated)
-    virtual machine status [bool] (started/stoped)
-    cirtual machine "ip"[str]"""
-    __tablename__ = 'VMs'
-
-    id = sqlalchemy.Column(Integer, primary_key = True)
-    name = sqlalchemy.Column(String)
-    started = sqlalchemy.Column(Boolean)
-    ip = sqlalchemy.Column(String)
-
-    def __init__(self, name, started, ip):
-        """name [str] is virtual machine "name"
-        started [bool] need for undertanding virtual machine started (started = False)
-                                                          or stoped (started = False)
-        ip [str] is ip address
-        """
-        self.name = name
-        self.started = started
-        self.ip = ip
-        
-    def __repr__(self):
-        """need for creating a row
-        """    
-        return '<VM(%s,%s,%s)>' % (self.name, self.started, self.ip)
+Base = declarative_base()
 
 class DBserver():
     """virtual machines database class 
     """
-    def __init__(self):
-        self.engine = sqlalchemy.create_engine('sqlite:///server.db', echo = True)
+    def __init__(self, detail = False):
+        self.engine = sqlalchemy.create_engine('sqlite:///server.db', echo = detail)
         Base.metadata.create_all(self.engine)
         Session = sqlalchemy.orm.sessionmaker(bind = self.engine)
         self.session = Session()
@@ -43,7 +18,7 @@ class DBserver():
         
         Return True if S is contain in database table "VMs" column "name", False othewise
         """
-        for names_in_DB in self.session.query(VM).filter(VM.name == name):
+        for names_in_DB in self.session.query(VMtable.VM).filter(VMtable.VM.name == name):
             return (True, names_in_DB)
         return (False, None)
         
@@ -57,7 +32,7 @@ class DBserver():
 
         Return True if virtual machine has been already created, False otherwise 
         """
-        if not self.check_name(name):
+        if not self.check_name(name)[0]:
             return False
         new_vm = VM(name, started, ip)
         self.session.add(new_vm)
@@ -78,18 +53,20 @@ class DBserver():
         self.session.commit()
         return True
 
-    def setStarted(self, name):
+    def setStarted(self, name, ip):
         """Set row in table "VMs" as started (column "started" = True)
         row is a row whichcontain name in column "name"
         """
-        set_vm = self.session.query(VM).filter(VM.name == name).one()
+        set_vm = self.session.query(VMtable.VM).filter(VMtable.VM.name == name).one()
         set_vm.started = True
+        set_vm.ip = ip
         self.session.commit()
         
     def setStoped(self,name):
         """Set row in table "VMs" as stoped (column "started" = False)
         row is a row which contain name in column "name"
         """
-        set_vm = self.session.query(VM).filter(VM.name == name).one()
+        set_vm = self.session.query(VMtable.VM).filter(VMtable.VM.name == name).one()
         set_vm.started = False
+        set_vm.ip = '0.0.0.0'
         self.session.commit()
