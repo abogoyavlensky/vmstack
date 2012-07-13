@@ -2,9 +2,9 @@ import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Integer, String, Boolean
 
-Base = declarative_base()
+base = declarative_base()
 
-class VM(Base):
+class VM(base):
     """This is "VM" table, which contain:
     
         virtual machine "id" [int] (is a primaty_key)
