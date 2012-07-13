@@ -2,14 +2,13 @@ import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 import VMtable
 
-Base = declarative_base()
 
 class DBserver():
     """virtual machines database class 
     """
     def __init__(self, detail = False):
         self.engine = sqlalchemy.create_engine('sqlite:///server.db', echo = detail)
-        Base.metadata.create_all(self.engine)
+        VMtable.base.metadata.create_all(self.engine)
         Session = sqlalchemy.orm.sessionmaker(bind = self.engine)
         self.session = Session()
         
@@ -32,9 +31,9 @@ class DBserver():
 
         Return True if virtual machine has been already created, False otherwise 
         """
-        if not self.check_name(name)[0]:
+        if self.check_name(name)[0]:
             return False
-        new_vm = VM(name, started, ip)
+        new_vm = VMtable.VM(name, started, ip)
         self.session.add(new_vm)
         self.session.commit()
         return True
@@ -53,7 +52,7 @@ class DBserver():
         self.session.commit()
         return True
 
-    def setStarted(self, name, ip):
+    def set_started(self, name, ip):
         """Set row in table "VMs" as started (column "started" = True)
         row is a row whichcontain name in column "name"
         """
@@ -62,7 +61,7 @@ class DBserver():
         set_vm.ip = ip
         self.session.commit()
         
-    def setStoped(self,name):
+    def set_stoped(self, name):
         """Set row in table "VMs" as stoped (column "started" = False)
         row is a row which contain name in column "name"
         """
