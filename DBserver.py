@@ -52,13 +52,12 @@ class DBserver():
         self.session.commit()
         return True
 
-    def set_started(self, name, ip):
+    def set_started(self, name):
         """Set row in table "VMs" as started (column "started" = True)
         row is a row whichcontain name in column "name"
         """
         set_vm = self.session.query(VMtable.VM).filter(VMtable.VM.name == name).one()
         set_vm.started = True
-        set_vm.ip = ip
         self.session.commit()
         
     def set_stoped(self, name):
@@ -69,3 +68,12 @@ class DBserver():
         set_vm.started = False
         set_vm.ip = '0.0.0.0'
         self.session.commit()
+
+    def set_ip(self, name, ip):
+        """Set row in table "VMs" as started (column "started" = True)
+        row is a row whichcontain name in column "name"
+        """
+        set_vm = self.session.query(VMtable.VM).filter(VMtable.VM.name == name).one()
+        set_vm.ip = ip
+        self.session.commit()
+        
