@@ -50,8 +50,8 @@ class StartVMHandler(tornado.web.RequestHandler):
         
     def post(self):
         name_vm = self.get_argument('name_vm')
-        ip = vm_cmd_api.start_vm(name_vm)
-        self.write('Your virtual machine ip is ' + ip + '.')
+        vm_cmd_api.start_vm(name_vm)
+        self.write('To know your virtual machine ip check /get_ip.')
 
 class StopVMHandler(tornado.web.RequestHandler):
     """Handler for good reaction on stoping virtual machine
@@ -76,7 +76,20 @@ class DeleteVMHandler(tornado.web.RequestHandler):
         name_vm = self.get_argument('name_vm')
         vm_cmd_api.delete_vm(name_vm)
         self.write(vm_cmd_api.get_statusoutput()[1])
-            
+
+class GetVMIpHandler(tornado.web.RequestHandler):
+    """Handler for good reaction on starting virtual machine
+    """
+    def get(self):
+        self.render('get_ip.html')
+        
+    def post(self):
+        name_vm = self.get_argument('name_vm')
+        ip = vm_cmd_api.get_vm_ip(name_vm)
+        self.write('Your virtual machine ip is ' + ip +'.')
+
+
+        
 def main():
     """Main function, run if module is a main module
     Create a Tornado Web api and put Hendlers
@@ -88,6 +101,7 @@ def main():
                     (r"/start", StartVMHandler),
                     (r"/stop", StopVMHandler),
                     (r"/delete", DeleteVMHandler),
+                    (r"/get_ip", GetVMIpHandler),
                     (r"/clone", CloneVMHandler)],
         template_path = os.path.join(os.path.dirname(__file__), "templates")
     )
