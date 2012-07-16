@@ -50,8 +50,8 @@ class VMserver():
             return 
 
         print(self.status_output[1])
-        self.database.set_started(name_vm, self.get_vm_ip(name_vm))
-        return self.vm_ip
+        self.database.set_started(name_vm)        
+        return True
 
         
     def list(self, what, detailed = True):
@@ -170,7 +170,7 @@ class VMserver():
         
         Nota bene: for bridgeadapter need type ifcondig on host, "en1" exemple
         """
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --bridgeadapter1 en1'
+        self._input = 'VBoxManage modifyvm "' + name_vm + '" --bridgeadapter1 "en1:  Ethernet (en1)"'
         self.execute(self._input)
         self._input = 'VBoxManage modifyvm "' + name_vm + '" --nic1 bridged'
         self.execute(self._input)
@@ -218,7 +218,27 @@ class VMserver():
         self._input = "arp -a | grep " + self.get_vm_mac(name_vm)
         self.execute(self._input)
         self.vm_ip = re.search('[(](\d+)[.](\d+)[.](\d+)[.](\d+)[)]', self.status_output[1])
-        print(self.vm_ip)
         self.vm_ip = self.vm_ip.group(0)[1:-1]
-        print(self.vm_ip)
+        self.database.set_ip(name_vm, self.vm_ip)
         return self.vm_ip
+
+    def set_boot_order(self, name_vm,
+                       boot1 = 'net', boot2 = 'disk',
+                       boot3 = 'none', boot4 = 'none'):
+        """Set a boot order like:
+        1.boot1
+        2.boot2
+        3.boot3
+        4.boot4
+        
+        All of them shold be uniqe (except "none" ):
+                none, floppy, dvd, disk, net
+        """
+        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot1 ' + boot1
+        self.execute(self._input)
+        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot2 ' + boot2
+        self.execute(self._input)
+        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot3 ' + boot3
+        self.execute(self._input)
+        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot4 ' + boot4
+        self.execute(self._input)
