@@ -1,79 +1,74 @@
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-import VMtable
 
 
 class DBserver():
-    """virtual machines database class 
+    """database class:
+    support: VMtable, USERtable
     """
-    def __init__(self, detail = False):
-        self.engine = sqlalchemy.create_engine('sqlite:///server.db', echo = detail)
-        VMtable.base.metadata.create_all(self.engine)
+    def __init__(self, db_name, tables_base, detail = False):
+        self.engine = sqlalchemy.create_engine('sqlite:///' + db_name, echo = detail)
+        for table_base in tables_base:
+            table_base.metadata.create_all(self.engine)
         Session = sqlalchemy.orm.sessionmaker(bind = self.engine)
         self.session = Session()
         
-    def check_name(self, name):
-        """DB.check_name(S) -> bool
+    def check_name(self, table, name):
+        """DB.check_name(T, S) -> bool
         
-        Return True if S is contain in database table "VMs" column "name", False othewise
+        Return True if "S" is contain in database table "T" column "name", False othewise
         """
-        for names_in_DB in self.session.query(VMtable.VM).filter(VMtable.VM.name == name):
+        for names_in_DB in self.session.query(table).filter(table.name == name):
             return (True, names_in_DB)
         return (False, None)
         
-    def add(self, name, started, ip):
-        """DB.add(name, started, ip) -> bool
-        
-        name [str] is a created (cloned) virtual machine name
-        started [bool] is a status of virtual machine (virtual machine started: True
-                                                       virtual machine started: False)
-        ip [str] is a virtual machine ip
+    def add(self, table, name, parameters):
+        """DB.add(T, S, P) -> bool
 
-        Return True if virtual machine has been already created, False otherwise 
+        T [str] is a table name for addition
+        S [str] will be added in column "name"
+        P [turple] will be added in all other column 
+
+        Return True if note hasn't already been added, False otherwise 
         """
-        if self.check_name(name)[0]:
+        if self.check_name(table, name)[0]:
             return False
-        new_vm = VMtable.VM(name, started, ip)
-        self.session.add(new_vm)
+        new_note = table(name, parameters)
+        self.session.add(new_note)
         self.session.commit()
         return True
 
-    def delete(self, name):
+    def delete(self, table, name):
         """DB.delete(name) -> bool
         
-        name [str] is a existed virtual machine name
+        name [str] is a existed note column "name"
 
-        Return True if name is contained in DB table "VMs", False otherwise
+        Return True if name is contained in database table "T" and was deleted successfuly,
+               False if name isn't contained in database table "T",
+               None if deletion was unsuccessful
         """
-        delete_vm = self.check_name(name)
-        if not delete_vm[0]:
+        delete_note = self.check_name(table, name)
+        if not delete_note[0]:
             return False
-        self.session.delete(delete_vm[1])
+        self.session.delete(delete_note[1])
         self.session.commit()
         return True
 
-    def set_started(self, name):
-        """Set row in table "VMs" as started (column "started" = True)
-        row is a row whichcontain name in column "name"
+    def check_user(self, table, name, password):
+        """Set "row"" in table "table" as active (column "active" = True)
+        "row" is a row which contain name in column "name"
         """
-        set_vm = self.session.query(VMtable.VM).filter(VMtable.VM.name == name).one()
-        set_vm.started = True
-        self.session.commit()
-        
-    def set_stoped(self, name):
-        """Set row in table "VMs" as stoped (column "started" = False)
+        if not self.check_name(table, name)[0]:
+            return None
+            
+        check_note = self.session.query(table).filter(table.name == name).one()
+        return check_note.password == password 
+            
+    def set_ip(self, table, name, ip):
+        """Set "ip"" in "row" in table with "table" like ip
         row is a row which contain name in column "name"
         """
-        set_vm = self.session.query(VMtable.VM).filter(VMtable.VM.name == name).one()
-        set_vm.started = False
-        set_vm.ip = '0.0.0.0'
-        self.session.commit()
-
-    def set_ip(self, name, ip):
-        """Set row in table "VMs" as started (column "started" = True)
-        row is a row whichcontain name in column "name"
-        """
-        set_vm = self.session.query(VMtable.VM).filter(VMtable.VM.name == name).one()
-        set_vm.ip = ip
+        set_note = self.session.query(table).filter(table.name == name).one()
+        set_note.ip = ip
         self.session.commit()
         
