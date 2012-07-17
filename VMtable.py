@@ -9,7 +9,7 @@ class VM(base):
     
         virtual machine "id" [int] (is a primaty_key)
         virtual machine "name" [str] (shoud not be repeated)
-        virtual machine status [bool] (started/stoped)
+        virtual machine "active" [bool] (started/stoped)
         cirtual machine "ip"[str]
     """
     __tablename__ = 'VMs'
@@ -19,14 +19,14 @@ class VM(base):
     started = sqlalchemy.Column(Boolean)
     ip = sqlalchemy.Column(String)
 
-    def __init__(self, name, started, ip):
+    def __init__(self, name, (active, ip)):
         """name [str] is virtual machine "name"
-        started [bool] need for undertanding virtual machine started (started = False)
-                                                          or stoped (started = False)
+        active [bool] need for undertanding virtual machine started (active = True)
+                                                          or stoped (active = False)
         ip [str] is ip address
         """
         self.name = name
-        self.started = started
+        self.active = active
         self.ip = ip
         
     def __repr__(self):
