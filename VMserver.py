@@ -1,6 +1,7 @@
 import commands
 import re
 import DBserver
+import VMtable
 
 class VMserver():
     """VirtualBox-Server connector class   
@@ -13,12 +14,12 @@ class VMserver():
         """
         self.status_output = (0, 'ready to work')
         self._input = 'echo'
-        self.database = DBserver.DBserver()
+        self.database = DBserver.DBserver('server.db', (VMtable.base,), True)
         self.vm_ip = ''
         self.vm_mac = ''
         
     def create_vm(self, name_vm):
-        """VMserver.create_vm(name_vm, ostype_vm = 'Ubuntu') -> bool
+        """VMserver.create_vm(name_vm) -> bool
         
         Create a virtual machine with name "name_vm"
         
@@ -30,10 +31,9 @@ class VMserver():
             print 'error in create_vm:\n' + self.status_output[1]
             return False
 
-        self.database.add(name_vm, False, '0.0.0.0')
-        return True
+        return self.database.add(VMtable.VM, name_vm, (False, '0.0.0.0'))
             
-    def start_vm(self, name_vm):
+    def start_vm(self, name_vm, start_type):
         """VMserver.start_vm(name_vm) -> bool
         
         Start a virtual machine with name "name_vm"
@@ -45,12 +45,12 @@ class VMserver():
 
         self.config_bridge_vm(name_vm)
 
-        self._input = 'VBoxManage startvm "' + name_vm + '"'
+        self._input = 'VBoxManage startvm "' + name_vm + '" --type ' + start_type
         if self.execute(self._input)[0] != 0:
-            return 
+            return False
 
         print(self.status_output[1])
-        self.database.set_started(name_vm)        
+        self.database.set_active(VMtable.VM, name_vm, True)        
         return True
 
         
@@ -85,7 +85,7 @@ class VMserver():
             print 'error in clone_vm:\n' + self.status_output[1]
             return False
             
-        self.database.add(name_child_vm, False, '0.0.0.0')
+        self.database.add(VMtable.VM, name_child_vm, (False, '0.0.0.0'))
         self.config_bridge_vm(name_child_vm)
         return True
         
@@ -110,11 +110,11 @@ class VMserver():
             self._input = 'VBoxManage controlvm "' + name_vm + '"' + ' poweroff'
         if self.execute(self._input)[0] !=0:
             return False
-        self.database.set_stoped(name_vm)
+        self.database.set_started(VMtable.VM, name_vm, False)
         return True
         
     def delete_vm(self, name_vm):
-        """VMserver.create_vm(name_vm) -> bool
+        """VMserver.delete_vm(name_vm) -> bool
 
         Delete a virtual machine with name "name_vm"
         
@@ -124,7 +124,7 @@ class VMserver():
             self._input = 'VBoxManage unregistervm "' + name_vm + '" --delete'
             if self.execute(self._input)[0] != 0:
                 return False
-            self.database.delete(name_vm)
+            self.database.delete(VMtable.VM, name_vm)
             return True
         else:
             print('You did not create this virtual machine')
@@ -155,6 +155,7 @@ class VMserver():
         self.execute(self._input)
         check_name_vm = '"' + name_vm + '"'
         if check_name_vm in self.status_output[1]:
+            self.database.set_started(VMtable.VM, name_vm, True)
             return True
 
         return False
@@ -219,7 +220,7 @@ class VMserver():
         self.execute(self._input)
         self.vm_ip = re.search('[(](\d+)[.](\d+)[.](\d+)[.](\d+)[)]', self.status_output[1])
         self.vm_ip = self.vm_ip.group(0)[1:-1]
-        self.database.set_ip(name_vm, self.vm_ip)
+        self.database.set_ip(Vtable.VM, name_vm, self.vm_ip)
         return self.vm_ip
 
     def set_boot_order(self, name_vm,
