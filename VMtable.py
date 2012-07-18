@@ -10,16 +10,20 @@ class VM(base):
         virtual machine "id" [int] (is a primaty_key)
         virtual machine "name" [str] (shoud not be repeated)
         virtual machine "active" [bool] (started/stoped)
-        cirtual machine "ip"[str]
-    """
+        virtual machine "ip" [str]
+        virtual machine "owner"[str]
+        virtual machine uuid [str]
+   """
     __tablename__ = 'VMs'
 
     id = sqlalchemy.Column(Integer, primary_key = True)
     name = sqlalchemy.Column(String)
-    started = sqlalchemy.Column(Boolean)
+    active = sqlalchemy.Column(Boolean)
     ip = sqlalchemy.Column(String)
+    owner = sqlalchemy.Column(String)
+    uuid_note = sqlalchemy.Column(String)
 
-    def __init__(self, name, (active, ip)):
+    def __init__(self, name, (active, ip, owner, uuid_note)):
         """name [str] is virtual machine "name"
         active [bool] need for undertanding virtual machine started (active = True)
                                                           or stoped (active = False)
@@ -28,9 +32,10 @@ class VM(base):
         self.name = name
         self.active = active
         self.ip = ip
+        self.owner = owner
+        self.uuid_note = uuid_note
         
     def __repr__(self):
         """need for creating a row
         """    
-        return '<VM(%s,%s,%s)>' % (self.name, self.started, self.ip)
-
+        return '<VM(%s,%s,%s,%s,%s)>' % (self.name, self.started, self.ip, self.owner, self.uuid_note)
