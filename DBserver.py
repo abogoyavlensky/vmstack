@@ -6,7 +6,7 @@ class DBserver():
     """database class:
     support: VMtable, USERtable
     """
-    def __init__(self, db_name, tables_base, detail = False):
+    def __init__(self, db_name, tables_base, detail = True):
         self.engine = sqlalchemy.create_engine('sqlite:///' + db_name, echo = detail)
         for table_base in tables_base:
             table_base.metadata.create_all(self.engine)
@@ -18,10 +18,10 @@ class DBserver():
         
         Return True if "S" is contain in database table "T" column "name", False othewise
         """
-        for names_in_DB in self.session.query(table).filter(table.name == name):
-            return (True, names_in_DB)
+        for note_in_DB in self.session.query(table).filter(table.name == name):
+            return (True, note_in_DB)
         return (False, None)
-        
+
     def add(self, table, name, parameters):
         """DB.add(T, S, P) -> bool
 
@@ -64,11 +64,38 @@ class DBserver():
         check_note = self.session.query(table).filter(table.name == name).one()
         return check_note.password == password 
             
+    def set_active(self, table, name, active):
+        """Set "active" in "row" in table with "table" like active
+        row is a row which contain name in column "name"
+        """
+        if not self.check_name(table, name)[0]:
+            return None
+            
+        set_note = self.session.query(table).filter(table.name == name).one()
+        set_note.active = active
+        self.session.commit()
+        
     def set_ip(self, table, name, ip):
         """Set "ip"" in "row" in table with "table" like ip
         row is a row which contain name in column "name"
         """
+        if not self.check_name(table, name)[0]:
+            return None
+            
         set_note = self.session.query(table).filter(table.name == name).one()
         set_note.ip = ip
         self.session.commit()
         
+    def check_uuid(self, table, uuid_note):
+        """DB.check_uuid(T, S) -> bool
+        
+        Return True if "S" is contain in database table "T" column "name", False othewise
+        """
+        for note_in_DB in self.session.query(table).filter(table.uuid_note == uuid_note):
+            return (True, note_in_DB)
+        return (False, None)
+
+    def get_uuid(self, table, name, owner):
+        for note_in_DB in self.session.query(table).filter(table.name == name, table.owner == owner):
+            return (True, note_in_DB.uuid_note)
+        return (False, None)
