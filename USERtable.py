@@ -16,22 +16,20 @@ class USER(base):
 
     id = sqlalchemy.Column(Integer, primary_key = True)
     name = sqlalchemy.Column(String)
-    active = sqlalchemy.Column(Boolean)
     password = sqlalchemy.Column(String)
 
 
-    def __init__(self, name, (active, password)):
+    def __init__(self, name, (password,)):
         """name [str] is user's' "name"
         password [str] is user's "password"
         active [bool] need for understanding user active loged in (active = True)
                                                      or loged out (active = False)
         """
         self.name = name
-        self.active = active
         self.password = password
 
     def __repr__(self):
         """need for creating a row
         """    
-        return '<VM(%s,%s,%s)>' % (self.name, self.active, self.password)
+        return '<VM(%s,%s)>' % (self.name, self.password)
 
