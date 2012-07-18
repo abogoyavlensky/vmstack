@@ -2,19 +2,21 @@ import commands
 import re
 import DBserver
 import VMtable
+import uuid
 
 class VMserver():
     """VirtualBox-Server connector class   
     """
-    def __init__(self):
+    def __init__(self, owner):
         """Constructor of VMserver:
             VMserver.Status_output [turple] is contain result of commands.getstatusoutput([str]) (status [int], output [str])
             VMserver.IN [str] is a string for execution
             VMserver.DB [DBserver.DBserver] is a database of virtual machines
         """
+        self.owner = owner
         self.status_output = (0, 'ready to work')
         self._input = 'echo'
-        self.database = DBserver.DBserver('server.db', (VMtable.base,), True)
+        self.database = DBserver.DBserver('server.db', (VMtable.base,))
         self.vm_ip = ''
         self.vm_mac = ''
         
@@ -25,13 +27,18 @@ class VMserver():
         
         Return True if it is sucsesful, False otherwise
         """
-        self._input = 'VBoxManage createvm "' + name_vm + ' --register'
-
-        if self.execute(self._input)[0] != 0:
-            print 'error in create_vm:\n' + self.status_output[1]
+        uuid_vm = str(uuid.uuid4())
+        if self.database.check_uuid(VMtable.VM, uuid_vm)[0]:
             return False
-
-        return self.database.add(VMtable.VM, name_vm, (False, '0.0.0.0'))
+            
+        self._input = 'VBoxManage createvm "%s" --uuid {%s} --basefolder "%s"--register' %\
+                      (name_vm, uuid_vm[1], 'users/%s' % self.owner)
+        
+        if self.execute(self._input)[0] != 0:
+            return False
+            
+        return self.database.add(VMtable.VM, name_vm, (False, '0.0.0.0', self.owner, uuid_vm))
+        return True
             
     def start_vm(self, name_vm, start_type):
         """VMserver.start_vm(name_vm) -> bool
@@ -40,12 +47,13 @@ class VMserver():
         
         Return True if it is sucsesful, False otherwise
         """
-        if not self.database.check_name(name_vm)[0]:
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
             return False
 
-        self.config_bridge_vm(name_vm)
+        self.config_bridge_vm(uuid_vm[1])
 
-        self._input = 'VBoxManage startvm "' + name_vm + '" --type ' + start_type
+        self._input = 'VBoxManage startvm {%s} --type %s' % (uuid_vm[1], start_type)
         if self.execute(self._input)[0] != 0:
             return False
 
@@ -69,8 +77,13 @@ class VMserver():
         """Execute operation which initialaize self.status_output[1]
         like string contained info of virtual machine
         """
-        self._input = 'VBoxManage showvminfo "' + name_vm + '"'
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
+        self._input = 'VBoxManage showvminfo {%s}' % uuid_vm[1]
         self.execute(self._input)
+        return True
         
     def clone_vm(self, name_parent_vm, name_child_vm):
         """VMserver.start_vm(name_parent_vm, name_child_vm = name_parent_vm + '_cloned') -> bool
@@ -79,20 +92,28 @@ class VMserver():
         
         Return True if it is sucsesful, False otherwise
         """
-        self._input = 'VBoxManage clonevm "' + name_parent_vm + '" --name "' + name_child_vm + '" --register'
+        uuid_vm = str(uuid.uuid4())
+        if self.database.check_uuid(VMtable.VM, uuid_vm)[0]:
+            return False
+        
+        self._input = 'VBoxManage clonevm "%s" --name "%s" --uuid {%s} --basefolder "%s" --register' %\
+                      (name_parent_vm, name_child_vm, uuid_vm, 'users/%s' % self.owner) 
 
         if self.execute(self._input)[0] != 0:
-            print 'error in clone_vm:\n' + self.status_output[1]
             return False
             
-        self.database.add(VMtable.VM, name_child_vm, (False, '0.0.0.0'))
+        self.database.add(VMtable.VM, name_child_vm, (False, '0.0.0.0', self.owner, uuid_vm))
         self.config_bridge_vm(name_child_vm)
         return True
         
     def control_vm(self, name_vm, what_to_do):
         """If type in cmd command 'VBoxManage controlvm "naem_vm" "what_to_do"' it will be the same 
         """
-        self._input = 'VBoxManage controlvm "' + name_vm + '"' + what_to_do
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
+        self._input = 'VBoxManage controlvm {%s} %s'% (uuid_vm[1], what_to_do)
         self.execute(self._input)
         
     def stop_vm(self, name_vm, safely = False):
@@ -104,13 +125,18 @@ class VMserver():
         
         Return True if it is sucsesful, False otherwise
         """
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
         if safely:
-            self._input = 'VBoxManage controlvm "' + name_vm + '"' + ' acpipowerbutton'
+            self._input = 'VBoxManage controlvm {%s} acpipowerbutton' % uuid_vm[1] 
         else:
-            self._input = 'VBoxManage controlvm "' + name_vm + '"' + ' poweroff'
+            self._input = 'VBoxManage controlvm {%s} poweroff' % uuid_vm[1]
         if self.execute(self._input)[0] !=0:
             return False
-        self.database.set_started(VMtable.VM, name_vm, False)
+            
+        self.database.set_active(VMtable.VM, name_vm, False)
         return True
         
     def delete_vm(self, name_vm):
@@ -120,14 +146,15 @@ class VMserver():
         
         Return True if it is sucsesful, False otherwise
         """
-        if self.database.check_name(name_vm)[0]:
-            self._input = 'VBoxManage unregistervm "' + name_vm + '" --delete'
-            if self.execute(self._input)[0] != 0:
-                return False
-            self.database.delete(VMtable.VM, name_vm)
-            return True
-        else:
-            print('You did not create this virtual machine')
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
+        self._input = 'VBoxManage unregistervm {%s} --delete' % uuid_vm[1]
+        if self.execute(self._input)[0] != 0:
+            return False
+        self.database.delete(VMtable.VM, name_vm)
+        return True
 
     def execute(self, input_command):
         """VMserver.execute(IN = self.IN) -> turple([int],[str])
@@ -151,11 +178,15 @@ class VMserver():
 
         Return True if find virtual machine whit name "name_vm", False otherwise
         """
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
         self._input = "VBoxManage list runningvms"
         self.execute(self._input)
-        check_name_vm = '"' + name_vm + '"'
-        if check_name_vm in self.status_output[1]:
-            self.database.set_started(VMtable.VM, name_vm, True)
+        check_uuid_vm = '{%s}' % uuid_vm[1] 
+        if check_uuid_vm in self.status_output[1]:
+            self.database.set_active(VMtable.VM, name_vm, True)
             return True
 
         return False
@@ -171,13 +202,17 @@ class VMserver():
         
         Nota bene: for bridgeadapter need type ifcondig on host, "en1" exemple
         """
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --bridgeadapter1 "en1:  Ethernet (en1)"'
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
+        self._input = 'VBoxManage modifyvm {%s} --bridgeadapter1 "en1:  Ethernet (en1)"' % uuid_vm[1]
         self.execute(self._input)
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --nic1 bridged'
+        self._input = 'VBoxManage modifyvm {%s} --nic1 bridged' % uuid_vm[1]
         self.execute(self._input)
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --nictype1 82540EM'
+        self._input = 'VBoxManage modifyvm {%s} --nictype1 82540EM' % uuid_vm[1]
         self.execute(self._input)
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --cableconnected1 on'
+        self._input = 'VBoxManage modifyvm {%s} --cableconnected1 on' % uuid_vm[1]
         self.execute(self._input)
                 
 
@@ -188,8 +223,13 @@ class VMserver():
         RAM: memory_vm in MB
         VRAM: vram_vm in MB
         if accelarate3d is True
-        """    
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --memory ' + memory_vm + ' --vram ' + vram_vm + ' --accelerate3d ' + accelerate3d_vm
+        """
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
+        self._input = 'VBoxManage modifyvm {%s} --memory %s --vram %s --accelerate3d %s' %\
+                      (uuid_vm[1], memory_vm, vram_vm, accelerate3d_vm)
         self. execute(self._input)
 
     def get_vm_mac(self, name_vm):
@@ -198,7 +238,11 @@ class VMserver():
         Return MAC addres of started virtual machine with name "name_vm" [str]
 
         """
-        self._input = 'VBoxManage showvminfo "' + name_vm + '"'
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
+        self._input = 'VBoxManage showvminfo {%s}' % uuid_vm[1]
         self.execute(self._input)
         mac_address_vm = re.search("\sNIC (\d):           MAC: (\w+)", self.status_output[1]).group(2).lower()
         self.vm_mac = ''
@@ -216,11 +260,11 @@ class VMserver():
 
         Return IP addres of started virtual machine with name "name_vm" [str]
         """
-        self._input = "arp -a | grep " + self.get_vm_mac(name_vm)
+        self._input = "arp -a | grep %s" % self.get_vm_mac(name_vm)
         self.execute(self._input)
         self.vm_ip = re.search('[(](\d+)[.](\d+)[.](\d+)[.](\d+)[)]', self.status_output[1])
         self.vm_ip = self.vm_ip.group(0)[1:-1]
-        self.database.set_ip(Vtable.VM, name_vm, self.vm_ip)
+        self.database.set_ip(VMtable.VM, name_vm, self.vm_ip)
         return self.vm_ip
 
     def set_boot_order(self, name_vm,
@@ -235,11 +279,15 @@ class VMserver():
         All of them shold be uniqe (except "none" ):
                 none, floppy, dvd, disk, net
         """
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot1 ' + boot1
+        uuid_vm = self.database.get_uuid(VMtable.VM, name_vm, self.owner)
+        if not uuid_vm[0]:
+            return False
+
+        self._input = 'VBoxManage modifyvm "%s" --boot1 %s' % uuid_vm[1], boot1
         self.execute(self._input)
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot2 ' + boot2
+        self._input = 'VBoxManage modifyvm "%s" --boot2 %s' % uuid_vm[1], boot2
         self.execute(self._input)
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot3 ' + boot3
+        self._input = 'VBoxManage modifyvm "%s" --boot3 %s' % uuid_vm[1], boot3
         self.execute(self._input)
-        self._input = 'VBoxManage modifyvm "' + name_vm + '" --boot4 ' + boot4
+        self._input = 'VBoxManage modifyvm "%s" --boot4 %s' % uuid_vm[1], boot4
         self.execute(self._input)
