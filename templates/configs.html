@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <title>VM configs</title>
+    </head>
+    <body>
+        <h1>Your try to change virtual machine configs</h1>
+        <p>Options:</p>
+        <form method="post" action= "/configs">
+            <p>Virtual machine name: <input name="name_vm"></p>
+            <p>RAM memory: <input name="ram"></p>
+            <p>VRAM memory: <input name="vram"></p>
+            <p>3d acceleration(on/off): <select name="accelerate3d">
+	    	<option>on
+		<option>off
+	      </select>
+	    </p>
+            <input type="submit">
+        </form>
+        <p><a href='/'>Main page</p>
+    </body>
+</html>
+
