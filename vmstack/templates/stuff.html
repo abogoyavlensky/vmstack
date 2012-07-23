@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>virtual machines list</title>
+    </head>
+    <body>
+        <h1>{{ user_name }}'s virtual machines:</h1>
+        {% for print_in in vm_list %}
+            <li>{{ print_in }}</li>   
+        {% end %}
+        <p><a href='/'>Main page</p>
+    </body>
+</html>
+

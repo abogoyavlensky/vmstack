@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <title>Information of VM</title>
+    </head>
+    <body>
+        <h1>Your try to stop virtual machine</h1>
+        <p>Options:</p>
+        <form method="post" action= "/stop">
+            <p>Virtual machine name: <input name="name_vm"></p>
+	    <p>Safely mode: <select name="safely">
+	      <option>True
+	      <option>False
+	    </select>
+	    </p>
+	    <input type="submit">
+        </form>
+        <p><a href='/'>Main page</p>
+    </body>
+</html>
+

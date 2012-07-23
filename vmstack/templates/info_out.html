@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>Information about {{ name }}</title>
+    </head>
+    <body>
+        <h1>Information about {{ name }}:</h1>
+        {%for print_in in out_info%}
+            <li>{{print_in}}</li>   
+        {% end %}
+        <p><a href='/'>Main page</p>
+    </body>
+</html>
+

@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <title>Starting  VM</title>
+    </head>
+    <body>
+        <h1>Your try to start virtual machine</h1>
+        <p>Options:</p>
+        <form method="post" action= "/start">
+            <p>Virtual machine name: <input name="name_vm"></p>
+	    <p>Safely mode: <select name = "start_type">
+	      <option>headless
+	      <option>gui
+	    </select>
+	    </p>
+            <input type="submit">
+        </form>
+        <p><a href='/'>Main page</p>
+    </body>
+</html>
+
