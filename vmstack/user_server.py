@@ -27,7 +27,11 @@ class USERserver():
         return self.database.delete(user_table.USER, name_user)
 
     def check_user(self, name_user, password):
+        """Check user's password
+        """
         return self.database.check_user(user_table.USER, name_user, password)
         
     def get_stuff(self, name_user):
+        """Return user's virtual machines names list
+        """
         return self.database.get_stuff(vm_table.VM, name_user)

@@ -61,7 +61,7 @@ class GreetHandler(BaseHandler):
         self.render('index.html', user_name = self.current_user)
 
 class VMsListHandler(BaseHandler):
-    """Handler for Greeting, when someone come on "main page"
+    """Handler for showing users virtual machines name list
     """
     @tornado.web.authenticated
     def get(self):
