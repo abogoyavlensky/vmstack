@@ -8,7 +8,6 @@ def main():
     parser.add_argument('-p', '--name_of_packages', nargs='*',default = '', help='Specify the name of your packages')
     args = parser.parse_args()
 
-   # name_folder_cb = 'my_cookbook'
     dict_args = vars(args)
     if dict_args['name_of_cookbook']==None:
         print 'Enter the name your cookbook'

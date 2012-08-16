@@ -67,22 +67,3 @@ class CookbookGenerator(object):
             f.close()
         else:
             print 'That path not exist'
-
-#    def generate_cookbook(self):
-#        """ Create a file structure of cookbook.
-#            User himself sets packages for installation and the name of cookbook.
-#        """
-#        name_folder_cb = 'my_cookbook'
-#        packages = ['vim','cmake']
-#        self._create_dirs(packages,name_folder_cb)
-
-
-#obj = CookbookGenerator()
-#obj.generate_cookbook()
-#def main():
-#    name_folder_cb = 'my_cookbook'
-#    packages = ['vim','cmake']
-#    CookbookGenerator.generate_cookbook(packages,name_folder_cb)
-#
-#if __name__=='__main__':
-#    main()
