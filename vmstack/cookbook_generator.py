@@ -5,6 +5,28 @@ class CookbookGenerator(object):
     """ This class create a dir cookbook with subdirs and all
         needed files for cookbook.
     """
+    def __init__(self):
+        """ Set values of path where there is your cookbook
+            including names of cookbook.
+        """
+        self.path_cookbook = ''
+        self.recipes = []
+
+
+    def cookbook_get_info(self):
+        """ Return list of string wich needed to write in
+            Vagrantfile for use your cookbook when you create a virtual machine
+        """
+        lines_cookbook = []
+        if self.path_cookbook != '':
+            lines_cookbook.append('  config.vm.provision :chef_solo do |chef|\n')
+            lines_cookbook.append('    chef.cookbooks_path = %s\n' % self.path_cookbook)
+            #lines_cookbook.append('    chef.roles_path = %s/roles\n' % self.path_cookbook)
+            for x in self.recipes:
+                lines_cookbook.append('    chef.add_recipe "%s"\n' % x)
+            lines_cookbook.append('  end\n')
+        return lines_cookbook
+
     def generate_cookbook(self,packages,name_folder_cb):
         """ Create all dirs for cookbook with name: name_folder_cb in folder where the program is running,
             else if dir already exists then print error message.
@@ -21,7 +43,9 @@ class CookbookGenerator(object):
     #create dirs structure of cookbook
         path_base = os.getcwd()
         path_cb_dir = path_base + '/' + name_folder_cb
+        self.path_cookbook = path_cb_dir
         path_cb_roles = path_cb_dir + '/' + 'roles'
+        self.recipes = ['packages']
         path_cb_packages = path_cb_dir + '/' + 'packages' + '/' + 'recipes'
         try:
             os.makedirs(path_cb_dir)
@@ -55,6 +79,7 @@ class CookbookGenerator(object):
         lines_roles = json.dumps(dict_roles,indent=4)
         name_roles_file = '%s.json' % name_roles_file
         self._create_files(path_cb_roles,name_roles_file,lines_roles)
+
 
     def _create_files(self,path,name_file,lines):
         """ Create files with name: name_file, in dir: path and with

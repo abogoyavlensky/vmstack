@@ -1,5 +1,6 @@
 import argparse
 from cookbook_generator import CookbookGenerator
+from vagrantfile_generator import VagrantfileGenerator
 
 def main():
     parser = argparse.ArgumentParser(description="Cookbook Generator")
@@ -20,6 +21,11 @@ def main():
                     packages.append(x)
         cookbook_obj = CookbookGenerator()
         cookbook_obj.generate_cookbook(packages,dict_args['name_of_cookbook'])
+
+    obj = VagrantfileGenerator()
+    lines_cookbook = cookbook_obj.cookbook_get_info()
+    obj.set_cookbook = lines_cookbook
+    obj.generate_vagrantfile()
 
 
 if __name__=='__main__':
